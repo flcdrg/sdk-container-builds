@@ -2,7 +2,6 @@
 
 namespace Test.Microsoft.NET.Build.Containers.Filesystem;
 
-[TestClass]
 public class DockerRegistryManager
 {
     public const string BaseImage = "dotnet/runtime";
@@ -14,11 +13,9 @@ public class DockerRegistryManager
 
     private static string s_registryContainerId;
 
-    [AssemblyInitialize]
     public static void StartAndPopulateDockerRegistry(TestContext context)
     {
-        Console.WriteLine(nameof(StartAndPopulateDockerRegistry));
-
+        context.WriteLine("Spawning local registry");
         ProcessStartInfo startRegistry = new("docker", "run --rm --publish 5010:5000 --detach registry:2")
         {
             RedirectStandardOutput = true,
@@ -34,26 +31,30 @@ public class DockerRegistryManager
         Assert.IsNotNull(registryContainerId);
         registryProcess.WaitForExit();
         Assert.AreEqual(0, registryProcess.ExitCode, $"Could not start Docker registry. Are you running one for manual testing?{Environment.NewLine}{errStream}");
-
         s_registryContainerId = registryContainerId;
 
+
+        context.WriteLine("Pulling base image");
         Process pullBase = Process.Start("docker", $"pull {BaseImageSource}{BaseImage}:{BaseImageTag}");
         Assert.IsNotNull(pullBase);
         pullBase.WaitForExit();
         Assert.AreEqual(0, pullBase.ExitCode);
-
+        
+        context.WriteLine("Tagging base image");
         Process tag = Process.Start("docker", $"tag {BaseImageSource}{BaseImage}:{BaseImageTag} {LocalRegistry}/{BaseImage}:{BaseImageTag}");
         Assert.IsNotNull(tag);
         tag.WaitForExit();
         Assert.AreEqual(0, tag.ExitCode);
 
+        context.WriteLine("Pushing base image to local registry");
         Process pushBase = Process.Start("docker", $"push {LocalRegistry}/{BaseImage}:{BaseImageTag}");
         Assert.IsNotNull(pushBase);
         pushBase.WaitForExit();
         Assert.AreEqual(0, pushBase.ExitCode);
+
+        context.WriteLine("Continuing with the tests");
     }
 
-    [AssemblyCleanup]
     public static void ShutdownDockerRegistry()
     {
         Assert.IsNotNull(s_registryContainerId);
