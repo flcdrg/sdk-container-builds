@@ -99,7 +99,7 @@ public class Image
         return container;
     }
 
-    static JsonArray ToJsonArray(string[] items) => new JsonArray(items.Where(s => !string.IsNullOrEmpty(s)).Select(s => (JsonValue)s).ToArray());
+    static JsonArray ToJsonArray(string[] items) => new JsonArray(items.Where(s => !string.IsNullOrEmpty(s)).Select(s => JsonValue.Create(s)).ToArray());
 
     public void SetEntrypoint(string[] executableArgs, string[]? args = null)
     {
@@ -152,8 +152,8 @@ public class Image
 
     public static string GetSha(JsonNode json)
     {
-        using SHA256 mySHA256 = SHA256.Create();
-        byte[] hash = mySHA256.ComputeHash(Encoding.UTF8.GetBytes(json.ToJsonString()));
+        Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+        SHA256.HashData(Encoding.UTF8.GetBytes(json.ToJsonString()), hash);
 
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
