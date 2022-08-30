@@ -2,6 +2,8 @@
 using Microsoft.NET.Build.Containers;
 using System.Text.Json;
 
+
+/*
 var fileOption = new Argument<DirectoryInfo>(
     name: "folder",
     description: "The folder to pack.")
@@ -33,7 +35,72 @@ Option<string> imageName = new(
 var imageTag = new Option<string>("--tag", description: "Tag of the new image.", getDefaultValue: () => "latest");
 
 var workingDir = new Option<string>("--working-dir", description: "The working directory of the application", getDefaultValue: () => "/app");
+*/
 
+var baseRegistryArg = new Argument<string>(
+    name: "--baseregistry",
+    description: "The base registry to use");
+
+var baseImageNameArg = new Argument<string>(
+    name: "--baseimagename",
+    description: "The base image to pull.");
+
+// Add validator here
+var baseImageTagOption = new Option<string>(
+    name: "--baseimagetag",
+    description: "The base image tag. Ex: 6.0");
+
+var outputRegistryArg = new Argument<string>(
+    name: "--outputregistry",
+    description: "The registry to push to.");
+
+var imageNameArg = new Argument<string>(
+    name: "--imagename",
+    description: "The name of the output image that will be pushed to the registry.");
+
+var imageTagsArg = new Argument<string[]>(
+    name: "--imagetags",
+    description: "The tags to associate with the new image.");
+
+var publishDirectoryArg = new Argument<DirectoryInfo>(
+    name: "--publishdirectory",
+    description: "The directory for the build outputs to be published.")
+    .LegalFilePathsOnly().ExistingOnly();
+
+var workingDirectoryArg = new Argument<string>(
+    name: "--workingdirectory",
+    description: "The working directory of the container.");
+
+var entrypointArg = new Argument<string[]>(
+    name: "--entrypoint",
+    description: "The entrypoint application of the container.");
+
+var entrypointArgsOption = new Option<string[]>(
+    name: "--entrypointargs",
+    description: "Arguments to pass alongside Entrypoint.");
+
+var labelsOption = new Option<string[]>(
+    name: "--labels",
+    description: "Labels that the image configuration will include in metadata.");
+
+RootCommand root = new RootCommand("Containerize an application without Docker.")
+{
+    baseRegistryArg,
+    baseImageNameArg,
+    baseImageTagOption,
+    outputRegistryArg,
+    imageNameArg,
+    imageTagsArg,
+    publishDirectoryArg,
+    workingDirectoryArg,
+    entrypointArg,
+    entrypointArgsOption,
+    labelsOption
+};
+/////
+
+
+/*
 RootCommand rootCommand = new("Containerize an application without Docker."){
     fileOption,
     registryUri,
@@ -59,7 +126,7 @@ rootCommand.SetHandler(async (folder, containerWorkingDir, uri, baseImageName, b
     );
 
 return await rootCommand.InvokeAsync(args);
-
+*/
 async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string imageName, string imageTag)
 {
     Registry registry = new Registry(new Uri($"http://{registryName}"));
