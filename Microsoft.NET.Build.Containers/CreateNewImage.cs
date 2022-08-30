@@ -67,7 +67,7 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
     public ITaskItem[] EntrypointArgs { get; set; }
 
     /// <summary>
-    /// Labels that the image configuration will include in metadata
+    /// Labels that the image configuration will include in metadata.
     /// </summary>
     public ITaskItem[] Labels { get; set; }
 
