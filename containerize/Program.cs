@@ -97,8 +97,24 @@ RootCommand root = new RootCommand("Containerize an application without Docker."
     entrypointArgsOption,
     labelsOption
 };
-/////
 
+root.SetHandler(async (context) =>
+{
+    string _baseReg = context.ParseResult.GetValueForArgument(baseRegistryArg);
+    string _baseName = context.ParseResult.GetValueForArgument(baseImageNameArg);
+    string? _baseTag = context.ParseResult.GetValueForOption(baseImageTagOption);
+    string _baseOutputReg = context.ParseResult.GetValueForArgument(outputRegistryArg);
+    string _name = context.ParseResult.GetValueForArgument(imageNameArg);
+    string[] _tags = context.ParseResult.GetValueForArgument(imageTagsArg);
+    DirectoryInfo _publishDir = context.ParseResult.GetValueForArgument(publishDirectoryArg);
+    string? _workingDir = context.ParseResult.GetValueForArgument(workingDirectoryArg);
+    string[] _entrypoint = context.ParseResult.GetValueForArgument(entrypointArg);
+    string[]? _entrypointArgs = context.ParseResult.GetValueForOption(entrypointArgsOption);
+    string[]? _labels = context.ParseResult.GetValueForOption(labelsOption);
+
+    await Containerize(_publishDir, _workingDir, _baseReg, _baseName, _baseTag, _entrypoint, _name, _tags)
+
+});
 
 /*
 RootCommand rootCommand = new("Containerize an application without Docker."){
