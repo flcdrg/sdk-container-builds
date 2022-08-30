@@ -2,155 +2,113 @@
 using Microsoft.NET.Build.Containers;
 using System.Text.Json;
 
-
-/*
-var fileOption = new Argument<DirectoryInfo>(
-    name: "folder",
-    description: "The folder to pack.")
-    .LegalFilePathsOnly().ExistingOnly();
-
-Option<string> registryUri = new(
-    name: "--registry",
-    description: "Location of the registry to push to.",
-    getDefaultValue: () => "localhost:5010");
-
-Option<string> baseImageName = new(
-    name: "--base",
-    description: "Base image name.",
-    getDefaultValue: () => "dotnet/runtime");
-
-Option<string> baseImageTag = new(
-    name: "--baseTag",
-    description: "Base image tag.",
-    getDefaultValue: () => $"{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription[5]}.0");
-
-Option<string[]> entrypoint = new(
-    name: "--entrypoint",
-    description: "Entrypoint application command.");
-
-Option<string> imageName = new(
-    name: "--name",
-    description: "Name of the new image.");
-
-var imageTag = new Option<string>("--tag", description: "Tag of the new image.", getDefaultValue: () => "latest");
-
-var workingDir = new Option<string>("--working-dir", description: "The working directory of the application", getDefaultValue: () => "/app");
-*/
-
-var baseRegistryArg = new Argument<string>(
-    name: "--baseregistry",
-    description: "The base registry to use");
-
-var baseImageNameArg = new Argument<string>(
-    name: "--baseimagename",
-    description: "The base image to pull.");
-
-// Add validator here
-var baseImageTagOption = new Option<string>(
-    name: "--baseimagetag",
-    description: "The base image tag. Ex: 6.0");
-
-var outputRegistryArg = new Argument<string>(
-    name: "--outputregistry",
-    description: "The registry to push to.");
-
-var imageNameArg = new Argument<string>(
-    name: "--imagename",
-    description: "The name of the output image that will be pushed to the registry.");
-
-var imageTagsArg = new Argument<string[]>(
-    name: "--imagetags",
-    description: "The tags to associate with the new image.");
-
 var publishDirectoryArg = new Argument<DirectoryInfo>(
-    name: "--publishdirectory",
+    name: "PublishDirectory",
     description: "The directory for the build outputs to be published.")
     .LegalFilePathsOnly().ExistingOnly();
 
-var workingDirectoryArg = new Argument<string>(
+var baseRegistryOpt = new Option<string>(
+    name: "--baseregistry",
+    description: "The base registry to use")
+    {
+        IsRequired = true
+    };
+
+var baseImageNameOpt = new Option<string>(
+    name: "--baseimagename",
+    description: "The base image to pull.")
+    {
+        IsRequired = true
+    };
+
+// // Add validator here
+var baseImageTagOpt = new Option<string>(
+    name: "--baseimagetag",
+    description: "The base image tag. Ex: 6.0",
+    getDefaultValue: () => "latest");
+
+var outputRegistryOpt = new Option<string>(
+    name: "--outputregistry",
+    description: "The registry to push to.")
+    {
+        IsRequired = true
+    };
+
+var imageNameOpt = new Option<string>(
+    name: "--imagename",
+    description: "The name of the output image that will be pushed to the registry.")
+    {
+        IsRequired = true
+    };
+
+var imageTagsOpt = new Option<string[]>(
+    name: "--imagetags",
+    description: "The tags to associate with the new image.");
+
+var workingDirectoryOpt = new Option<string>(
     name: "--workingdirectory",
-    description: "The working directory of the container.");
+    description: "The working directory of the container.")
+    {
+        IsRequired = true
+    };
 
-var entrypointArg = new Argument<string[]>(
+var entrypointOpt = new Option<string[]>(
     name: "--entrypoint",
-    description: "The entrypoint application of the container.");
+    description: "The entrypoint application of the container.")
+    {
+        IsRequired = true
+    };
 
-var entrypointArgsOption = new Option<string[]>(
+var entrypointArgsOpt = new Option<string[]>(
     name: "--entrypointargs",
     description: "Arguments to pass alongside Entrypoint.");
 
-var labelsOption = new Option<string[]>(
+var labelsOpt = new Option<string[]>(
     name: "--labels",
     description: "Labels that the image configuration will include in metadata.");
 
 RootCommand root = new RootCommand("Containerize an application without Docker.")
 {
-    baseRegistryArg,
-    baseImageNameArg,
-    baseImageTagOption,
-    outputRegistryArg,
-    imageNameArg,
-    imageTagsArg,
     publishDirectoryArg,
-    workingDirectoryArg,
-    entrypointArg,
-    entrypointArgsOption,
-    labelsOption
+    baseRegistryOpt,
+    baseImageNameOpt,
+    baseImageTagOpt,
+    outputRegistryOpt,
+    imageNameOpt,
+    imageTagsOpt,
+    workingDirectoryOpt,
+    entrypointOpt,
+    entrypointArgsOpt,
+    labelsOpt
 };
 
 root.SetHandler(async (context) =>
 {
-    string _baseReg = context.ParseResult.GetValueForArgument(baseRegistryArg);
-    string _baseName = context.ParseResult.GetValueForArgument(baseImageNameArg);
-    string? _baseTag = context.ParseResult.GetValueForOption(baseImageTagOption);
-    string _baseOutputReg = context.ParseResult.GetValueForArgument(outputRegistryArg);
-    string _name = context.ParseResult.GetValueForArgument(imageNameArg);
-    string[] _tags = context.ParseResult.GetValueForArgument(imageTagsArg);
     DirectoryInfo _publishDir = context.ParseResult.GetValueForArgument(publishDirectoryArg);
-    string? _workingDir = context.ParseResult.GetValueForArgument(workingDirectoryArg);
-    string[] _entrypoint = context.ParseResult.GetValueForArgument(entrypointArg);
-    string[]? _entrypointArgs = context.ParseResult.GetValueForOption(entrypointArgsOption);
-    string[]? _labels = context.ParseResult.GetValueForOption(labelsOption);
+    string _baseReg = context.ParseResult.GetValueForOption(baseRegistryOpt) ?? "";
+    string _baseName = context.ParseResult.GetValueForOption(baseImageNameOpt) ?? "";
+    string _baseTag = context.ParseResult.GetValueForOption(baseImageTagOpt) ?? "";
+    string _outputReg = context.ParseResult.GetValueForOption(outputRegistryOpt) ?? "";
+    string _name = context.ParseResult.GetValueForOption(imageNameOpt) ?? "";
+    string[] _tags = context.ParseResult.GetValueForOption(imageTagsOpt) ?? Array.Empty<string>();
+    string _workingDir = context.ParseResult.GetValueForOption(workingDirectoryOpt) ?? "";
+    string[] _entrypoint = context.ParseResult.GetValueForOption(entrypointOpt) ?? Array.Empty<string>();
+    string[] _entrypointArgs = context.ParseResult.GetValueForOption(entrypointArgsOpt) ?? Array.Empty<string>();
+    string[] _labels = context.ParseResult.GetValueForOption(labelsOpt) ?? Array.Empty<string>();
 
-    await Containerize(_publishDir, _workingDir, _baseReg, _baseName, _baseTag, _entrypoint, _name, _tags)
-
+    await Containerize(_publishDir, _workingDir, _baseReg, _baseName, _baseTag, _entrypoint, _name, _tags, _outputReg);
 });
 
-/*
-RootCommand rootCommand = new("Containerize an application without Docker."){
-    fileOption,
-    registryUri,
-    baseImageName,
-    baseImageTag,
-    entrypoint,
-    imageName,
-    imageTag,
-    workingDir
-};
-rootCommand.SetHandler(async (folder, containerWorkingDir, uri, baseImageName, baseTag, entrypoint, imageName, imageTag) =>
-{
-    await Containerize(folder, containerWorkingDir, uri, baseImageName, baseTag, entrypoint, imageName, imageTag);
-},
-    fileOption,
-    workingDir,
-    registryUri,
-    baseImageName,
-    baseImageTag, 
-    entrypoint,
-    imageName,
-    imageTag
-    );
+return await root.InvokeAsync(args);
 
-return await rootCommand.InvokeAsync(args);
-*/
-async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string imageName, string imageTag)
+async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string imageName, string[] imageTags, string outputRegistry)
 {
-    Registry registry = new Registry(new Uri($"http://{registryName}"));
+    Registry registry = new Registry(new Uri(registryName));
 
     Console.WriteLine($"Reading from {registry.BaseUri}");
 
-    Image x = await registry.GetImageManifest(baseName, baseTag);
-    x.WorkingDirectory = workingDir;
+    Image img = await registry.GetImageManifest(baseName, baseTag);
+    img.WorkingDirectory = workingDir;
 
     JsonSerializerOptions options = new()
     {
@@ -160,14 +118,41 @@ async Task Containerize(DirectoryInfo folder, string workingDir, string registry
     Console.WriteLine($"Copying from {folder.FullName} to {workingDir}");
     Layer l = Layer.FromDirectory(folder.FullName, workingDir);
 
-    x.AddLayer(l);
+    img.AddLayer(l);
 
-    x.SetEntrypoint(entrypoint);
+    img.SetEntrypoint(entrypoint);
 
-    // File.WriteAllTextAsync("manifest.json", x.manifest.ToJsonString(options));
-    // File.WriteAllTextAsync("config.json", x.config.ToJsonString(options));
+    var isDockerPush = outputRegistry.StartsWith("docker://");
+    Registry? outputReg = isDockerPush ? null : new Registry(new Uri(outputRegistry));
 
-    await LocalDocker.Load(x, imageName, imageTag, baseName);
+    foreach (var tag in imageTags)
+    {
+        if (isDockerPush)
+        {
+            try
+            {
+                LocalDocker.Load(img, imageName, tag, baseName).Wait();
+                Console.WriteLine("Pushed container '{0}:{1}' to Docker daemon", imageName, tag);
+            }
+            catch (AggregateException ex) when (ex.InnerException is DockerLoadException dle)
+            {
+                Console.WriteLine(dle);
+            }
+        }
+        else
+        {
+            try
+            {
+                Console.WriteLine($"Trying to push container '{imageName}:{tag}' to registry '{outputRegistry}'");
+                outputReg?.Push(img, imageName, tag, imageName).Wait();
+                Console.WriteLine($"Pushed container '{imageName}:{tag}' to registry '{outputRegistry}'");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to push to output registry: {0}", e);
+            }
+        }
+    }
 
-    Console.WriteLine($"Loaded image into local Docker daemon. Use 'docker run --rm -it --name {imageName} {registryName}/{imageName}:{imageTag}' to run the application.");
+    //Console.WriteLine($"Loaded image into local Docker daemon. Use 'docker run --rm -it --name {imageName} {registryName}/{imageName}:{imageTag}' to run the application.");
 }
