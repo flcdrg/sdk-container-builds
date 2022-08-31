@@ -138,11 +138,8 @@ async Task Containerize(DirectoryInfo folder, string workingDir, string registry
     foreach (var label in labels)
     {
         string[] labelPieces = label.Split('=');
-        if (labelPieces.Length != 2)
-        {
-            Console.WriteLine("Incorrect label format. Skipping {0}", label);
-            continue;
-        }
+
+        // labels are validated by System.Commandline API
         img.Label(labelPieces[0], labelPieces[1]);
     }
 
