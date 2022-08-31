@@ -63,6 +63,7 @@ var entrypointArgsOpt = new Option<string[]>(
     name: "--entrypointargs",
     description: "Arguments to pass alongside Entrypoint.");
 
+// TODO: Validator on the labels. Split on '=' and length must be 2
 var labelsOpt = new Option<string[]>(
     name: "--labels",
     description: "Labels that the image configuration will include in metadata.");
@@ -96,12 +97,12 @@ root.SetHandler(async (context) =>
     string[] _entrypointArgs = context.ParseResult.GetValueForOption(entrypointArgsOpt) ?? Array.Empty<string>();
     string[] _labels = context.ParseResult.GetValueForOption(labelsOpt) ?? Array.Empty<string>();
 
-    await Containerize(_publishDir, _workingDir, _baseReg, _baseName, _baseTag, _entrypoint, _name, _tags, _outputReg);
+    await Containerize(_publishDir, _workingDir, _baseReg, _baseName, _baseTag, _entrypoint, _entrypointArgs, _name, _tags, _outputReg, _labels);
 });
 
 return await root.InvokeAsync(args);
 
-async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string imageName, string[] imageTags, string outputRegistry)
+async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string[] entrypointArgs, string imageName, string[] imageTags, string outputRegistry, string[] labels)
 {
     Registry registry = new Registry(new Uri(registryName));
 
@@ -120,10 +121,21 @@ async Task Containerize(DirectoryInfo folder, string workingDir, string registry
 
     img.AddLayer(l);
 
-    img.SetEntrypoint(entrypoint);
+    img.SetEntrypoint(entrypoint, entrypointArgs);
 
     var isDockerPush = outputRegistry.StartsWith("docker://");
     Registry? outputReg = isDockerPush ? null : new Registry(new Uri(outputRegistry));
+
+    foreach (var label in labels)
+    {
+        string[] labelPieces = label.Split('=');
+        if (labelPieces.Length != 2)
+        {
+            Console.WriteLine("Incorrect label format. Skipping {0}", label);
+            continue;
+        }
+        img.Label(labelPieces[0], labelPieces[1]);
+    }
 
     foreach (var tag in imageTags)
     {
