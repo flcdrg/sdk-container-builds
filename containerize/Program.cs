@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using Microsoft.NET.Build.Containers;
 using System.Text.Json;
+using System.CommandLine.Parsing;
 
 var publishDirectoryArg = new Argument<DirectoryInfo>(
     name: "PublishDirectory",
@@ -63,10 +64,18 @@ var entrypointArgsOpt = new Option<string[]>(
     name: "--entrypointargs",
     description: "Arguments to pass alongside Entrypoint.");
 
-// TODO: Validator on the labels. Split on '=' and length must be 2
 var labelsOpt = new Option<string[]>(
     name: "--labels",
-    description: "Labels that the image configuration will include in metadata.");
+    description: "Labels that the image configuration will include in metadata.",
+    parseArgument: result =>
+    {
+        if (result.Tokens.Where((v) => v.Value.Split('=').Length != 2).Count() != 0)
+        {
+            result.ErrorMessage = "Incorrectly formatted label. Format: x=y";
+            return new string[] { };
+        }
+        return result.Tokens.Select(v => v.Value).ToArray<string>();
+    });
 
 RootCommand root = new RootCommand("Containerize an application without Docker.")
 {
