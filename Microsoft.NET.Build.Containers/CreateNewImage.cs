@@ -77,6 +77,8 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
     /// Labels that the image configuration will include in metadata
     /// </summary>
     public ITaskItem[] Labels { get; set; }
+    
+    public string ContainerUserName { get; set; }
 
     private bool IsDockerPush { get => OutputRegistry == "docker://"; }
 
@@ -94,6 +96,7 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
         EntrypointArgs = Array.Empty<ITaskItem>();
         Labels = Array.Empty<ITaskItem>();
         ExposedPorts = Array.Empty<ITaskItem>();
+        ContainerUserName = "";
     }
 
     private void SetPorts(Image image, ITaskItem[] exposedPorts)
