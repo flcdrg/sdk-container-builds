@@ -20,17 +20,18 @@ public class EndToEnd
 
         Registry registry = new Registry(new Uri($"http://{DockerRegistryManager.LocalRegistry}"));
 
-        Image x = await registry.GetImageManifest(DockerRegistryManager.BaseImage, DockerRegistryManager.BaseImageTag);
+        Image x = await registry.GetImageManifest(DockerRegistryManager.ChiseledImage, DockerRegistryManager.ChiseledImageTag);
 
-        Layer l = Layer.FromDirectory(publishDirectory, "/app");
+        Layer l = Layer.FromDirectory(publishDirectory, "/app", "app");
 
         x.AddLayer(l);
 
         x.SetEntrypoint(new [] {"/app/MinimalTestApp" });
 
+
         // Push the image back to the local registry
 
-        await registry.Push(x, NewImageName, "latest", DockerRegistryManager.BaseImage);
+        await registry.Push(x, NewImageName, "latest", DockerRegistryManager.ChiseledImage);
 
         // pull it back locally
 
@@ -42,6 +43,9 @@ public class EndToEnd
         // Run the image
 
         ProcessStartInfo runInfo = new("docker", $"run --rm --tty {DockerRegistryManager.LocalRegistry}/{NewImageName}:latest");
+        runInfo.RedirectStandardError = true;
+        runInfo.RedirectStandardInput = true;
+        runInfo.RedirectStandardOutput = true;
         Process run = Process.Start(runInfo);
         Assert.IsNotNull(run);
         await run.WaitForExitAsync();
@@ -58,10 +62,10 @@ public class EndToEnd
 
         Registry registry = new Registry(new Uri($"http://{DockerRegistryManager.LocalRegistry}"));
 
-        Image x = await registry.GetImageManifest(DockerRegistryManager.BaseImage, DockerRegistryManager.BaseImageTag);
+        Image x = await registry.GetImageManifest(DockerRegistryManager.ChiseledImage, DockerRegistryManager.ChiseledImageTag);
 
-        Layer l = Layer.FromDirectory(publishDirectory, "/app");
-
+        // x.User = "app";
+        Layer l = Layer.FromDirectory(publishDirectory, "/app", x.User);
         x.AddLayer(l);
 
         x.SetEntrypoint(new [] { "/app/MinimalTestApp" });

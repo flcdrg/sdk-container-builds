@@ -75,7 +75,7 @@ async Task Containerize(DirectoryInfo folder, string workingDir, string registry
     };
 
     Console.WriteLine($"Copying from {folder.FullName} to {workingDir}");
-    Layer l = Layer.FromDirectory(folder.FullName, workingDir);
+    Layer l = Layer.FromDirectory(folder.FullName, workingDir, "app");
 
     x.AddLayer(l);
 

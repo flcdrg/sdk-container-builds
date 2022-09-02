@@ -9,7 +9,7 @@ public record struct Layer
 
     public string BackingFile { get; private set; }
 
-    public static Layer FromDirectory(string directory, string containerPath)
+    public static Layer FromDirectory(string directory, string containerPath, string userName)
     {
         var fileList =
             new DirectoryInfo(directory)
@@ -19,10 +19,19 @@ public record struct Layer
                         string destinationPath = Path.Join(containerPath, Path.GetRelativePath(directory, fsi.FullName)).Replace(Path.DirectorySeparatorChar, '/');
                         return (fsi.FullName, destinationPath);
                     });
-        return FromFiles(fileList);
+        return FromFiles(fileList, userName);
     }
 
-    public static Layer FromFiles(IEnumerable<(string path, string containerPath)> fileList)
+    static IEnumerable<DirectoryInfo> Walk(DirectoryInfo start) {
+        var current = start;
+        yield return start;
+        while (current.Parent is {} parentDir) {
+            current = parentDir;
+            yield return parentDir;
+        }
+    }
+
+    public static Layer FromFiles(IEnumerable<(string path, string containerPath)> fileList, string userName)
     {
         long fileSize;
         Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
@@ -30,16 +39,40 @@ public record struct Layer
         string tempTarballPath = ContentStore.GetTempFile();
         using (FileStream fs = File.Create(tempTarballPath))
         {
+            var knownDirectoryPrefixes = new HashSet<string>();
             // using (GZipStream gz = new(fs, CompressionMode.Compress)) // TODO: https://github.com/dotnet/sdk-container-builds/issues/29
             using (TarWriter writer = new(fs, TarEntryFormat.Gnu, leaveOpen: true))
             {
+
                 foreach (var item in fileList)
                 {
+                    var fileInfo = new FileInfo(item.path);
+                    var containerFileInfo = new FileInfo(item.containerPath);
+                    var containerDir = containerFileInfo.Directory!;
+                    if (!knownDirectoryPrefixes.Contains(containerDir.FullName)) {
+                        foreach (var directory in Walk(containerDir)) {
+                            string containerDirPath = directory.FullName.Replace("c:\\", "").TrimStart(PathSeparators);
+                            if (containerDirPath == "") {
+                                break;
+                            }
+                            var dirEntry = new GnuTarEntry(TarEntryType.Directory, containerDirPath);
+                            dirEntry.UserName = userName;
+                            dirEntry.Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
+                            writer.WriteEntry(dirEntry);
+                            knownDirectoryPrefixes.Add(directory.FullName);
+                        }
+                    }
                     // Docker treats a COPY instruction that copies to a path like `/app` by
                     // including `app/` as a directory, with no leading slash. Emulate that here.
                     string containerPath = item.containerPath.TrimStart(PathSeparators);
-
-                    writer.WriteEntry(item.path, containerPath);
+                    var entry = new GnuTarEntry(TarEntryType.RegularFile, containerPath);
+                    entry.UserName = userName;
+                    entry.ModificationTime = fileInfo.LastWriteTimeUtc;
+                    entry.ChangeTime = fileInfo.LastWriteTimeUtc;
+                    entry.AccessTime = fileInfo.LastAccessTimeUtc;
+                    entry.Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
+                    entry.DataStream = fileInfo.OpenRead();
+                    writer.WriteEntry(entry);
                 }
             }
 

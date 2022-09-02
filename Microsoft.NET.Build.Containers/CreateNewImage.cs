@@ -116,7 +116,7 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
             Log.LogMessage($"Loading from directory: {PublishDirectory}");
         }
 
-        Layer newLayer = Layer.FromDirectory(PublishDirectory, WorkingDirectory);
+        Layer newLayer = Layer.FromDirectory(PublishDirectory, WorkingDirectory, String.IsNullOrEmpty(ContainerUserName) ? image.User : ContainerUserName);
         image.AddLayer(newLayer);
         image.WorkingDirectory = WorkingDirectory;
         image.SetEntrypoint(Entrypoint.Select(i => i.ItemSpec).ToArray(), EntrypointArgs.Select(i => i.ItemSpec).ToArray());
