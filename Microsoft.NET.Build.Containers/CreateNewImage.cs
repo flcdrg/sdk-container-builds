@@ -71,6 +71,8 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
     /// </summary>
     public ITaskItem[] Labels { get; set; }
 
+    public string ContainerUserName { get; set; }
+
     public CreateNewImage()
     {
         BaseRegistry = "";
@@ -84,6 +86,7 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
         Entrypoint = Array.Empty<ITaskItem>();
         EntrypointArgs = Array.Empty<ITaskItem>();
         Labels = Array.Empty<ITaskItem>();
+        ContainerUserName = "";
     }
 
 
