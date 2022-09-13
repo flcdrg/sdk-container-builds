@@ -52,7 +52,7 @@ public class DockerRegistryManager
         pushBase.WaitForExit();
         Assert.AreEqual(0, pushBase.ExitCode);
 
-        context.WriteLine("Continuing with the tests");
+        context.WriteLine($"{nameof(StartAndPopulateDockerRegistry)} complete");
     }
 
     public static void ShutdownDockerRegistry()
