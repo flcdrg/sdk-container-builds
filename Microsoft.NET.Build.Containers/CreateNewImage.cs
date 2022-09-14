@@ -78,6 +78,9 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
     /// </summary>
     public ITaskItem[] Labels { get; set; }
     
+    /// <summary>
+    /// The user to run the container as by default
+    /// </summary>
     public string ContainerUserName { get; set; }
 
     private bool IsDockerPush { get => OutputRegistry == "docker://"; }
@@ -190,11 +193,10 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        var isDockerPush = OutputRegistry.StartsWith("docker://");
-        Registry? outputReg = isDockerPush ? null : new Registry(new Uri(OutputRegistry));
+        Registry? outputReg = IsDockerPush ? null : new Registry(new Uri(OutputRegistry));
         foreach (var tag in ImageTags)
         {
-            if (isDockerPush)
+            if (IsDockerPush)
             {
                 try
                 {
