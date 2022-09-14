@@ -229,7 +229,7 @@ public static class ContainerHelpers
         };
 
         Console.WriteLine($"Copying from {folder.FullName} to {workingDir}");
-        Layer l = Layer.FromDirectory(folder.FullName, workingDir);
+        Layer l = Layer.FromDirectory(folder.FullName, workingDir, img.User);
 
         img.AddLayer(l);
 
