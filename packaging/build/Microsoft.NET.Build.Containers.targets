@@ -94,6 +94,7 @@
                         Entrypoint="@(ContainerEntrypoint)"
                         EntrypointArgs="@(ContainerEntrypointArgs)"
                         Labels="@(ContainerLabel)"
-                        ExposedPorts="@(ContainerPort)" />
+                        ExposedPorts="@(ContainerPort)"
+                        ExecutionUserName="$(ContainerUserName)" />
     </Target>
 </Project>

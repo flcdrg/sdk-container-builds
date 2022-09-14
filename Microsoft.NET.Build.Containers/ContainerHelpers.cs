@@ -210,7 +210,7 @@ public static class ContainerHelpers
         }
     }
 
-    public static async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string[] entrypointArgs, string imageName, string[] imageTags, string outputRegistry, string[] labels, Port[] exposedPorts)
+    public static async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string[] entrypointArgs, string imageName, string? userName, string[] imageTags, string outputRegistry, string[] labels, Port[] exposedPorts)
     {
         Registry baseRegistry = new Registry(new Uri(registryName));
 
@@ -218,6 +218,10 @@ public static class ContainerHelpers
 
         Image img = await baseRegistry.GetImageManifest(baseName, baseTag);
         img.WorkingDirectory = workingDir;
+        if (!String.IsNullOrEmpty(userName))
+        {
+            img.User = userName;
+        }
 
         JsonSerializerOptions options = new()
         {

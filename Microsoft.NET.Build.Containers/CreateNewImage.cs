@@ -81,7 +81,7 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
     /// <summary>
     /// The user to run the container as by default
     /// </summary>
-    public string ContainerUserName { get; set; }
+    public string ExecutionUserName { get; set; }
 
     private bool IsDockerPush { get => OutputRegistry == "docker://"; }
 
@@ -99,54 +99,7 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
         EntrypointArgs = Array.Empty<ITaskItem>();
         Labels = Array.Empty<ITaskItem>();
         ExposedPorts = Array.Empty<ITaskItem>();
-        ContainerUserName = "";
-    }
-
-    private void SetPorts(Image image, ITaskItem[] exposedPorts)
-    {
-        foreach (var port in exposedPorts)
-        {
-            var portNo = port.ItemSpec;
-            var portTy = port.GetMetadata("Type");
-            if (ContainerHelpers.TryParsePort(portNo, portTy, out var parsedPort, out var errors))
-            {
-                image.ExposePort(parsedPort.number, parsedPort.type);
-            }
-            else
-            {
-                ContainerHelpers.ParsePortError parsedErrors = (ContainerHelpers.ParsePortError)errors!;
-                var portString = portTy == null ? portNo : $"{portNo}/{portTy}";
-                if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.MissingPortNumber))
-                {
-                    Log.LogError("ContainerPort item '{0}' does not specify the port number. Please ensure the item's Include is a port number, for example '<ContainerPort Include=\"80\" />'", port.ItemSpec);
-                }
-                else
-                {
-                    var message = "A ContainerPort item was provided with ";
-                    var arguments = new List<string>(2);
-                    if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.InvalidPortNumber) && parsedErrors.HasFlag(ContainerHelpers.ParsePortError.InvalidPortNumber))
-                    {
-                        message += "an invalid port number '{0}' and an invalid port type '{1}'";
-                        arguments.Add(portNo);
-                        arguments.Add(portTy!);
-                    }
-                    else if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.InvalidPortNumber))
-                    {
-                        message += "an invalid port number '{0}'";
-                        arguments.Add(portNo);
-                    }
-                    else if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.InvalidPortNumber))
-                    {
-                        message += "an invalid port type '{0}'";
-                        arguments.Add(portTy!);
-                    }
-                    message += ". ContainerPort items must have an Include value that is an integer, and a Type value that is either 'tcp' or 'udp'";
-
-                    Log.LogError(message, arguments);
-                }
-            }
-        }
-
+        ExecutionUserName = "";
     }
 
     public override bool Execute()
@@ -164,6 +117,9 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
         {
             reg = new Registry(new Uri(BaseRegistry, UriKind.RelativeOrAbsolute));
             image = reg.GetImageManifest(BaseImageName, BaseImageTag).Result;
+            if (!String.IsNullOrEmpty(ExecutionUserName)) {
+                image.User = ExecutionUserName;
+            }
         }
         catch
         {
@@ -233,4 +189,55 @@ public class CreateNewImage : Microsoft.Build.Utilities.Task
 
         return !Log.HasLoggedErrors;
     }
+
+    /// <summary>
+    /// Sets the ports that the container exposes. Extracts out error message handling.
+    /// </summary>
+    private void SetPorts(Image image, ITaskItem[] exposedPorts)
+    {
+        foreach (var port in exposedPorts)
+        {
+            var portNo = port.ItemSpec;
+            var portTy = port.GetMetadata("Type");
+            if (ContainerHelpers.TryParsePort(portNo, portTy, out var parsedPort, out var errors))
+            {
+                image.ExposePort(parsedPort.number, parsedPort.type);
+            }
+            else
+            {
+                ContainerHelpers.ParsePortError parsedErrors = (ContainerHelpers.ParsePortError)errors!;
+                var portString = portTy == null ? portNo : $"{portNo}/{portTy}";
+                if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.MissingPortNumber))
+                {
+                    Log.LogError("ContainerPort item '{0}' does not specify the port number. Please ensure the item's Include is a port number, for example '<ContainerPort Include=\"80\" />'", port.ItemSpec);
+                }
+                else
+                {
+                    var message = "A ContainerPort item was provided with ";
+                    var arguments = new List<string>(2);
+                    if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.InvalidPortNumber) && parsedErrors.HasFlag(ContainerHelpers.ParsePortError.InvalidPortNumber))
+                    {
+                        message += "an invalid port number '{0}' and an invalid port type '{1}'";
+                        arguments.Add(portNo);
+                        arguments.Add(portTy!);
+                    }
+                    else if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.InvalidPortNumber))
+                    {
+                        message += "an invalid port number '{0}'";
+                        arguments.Add(portNo);
+                    }
+                    else if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.InvalidPortNumber))
+                    {
+                        message += "an invalid port type '{0}'";
+                        arguments.Add(portTy!);
+                    }
+                    message += ". ContainerPort items must have an Include value that is an integer, and a Type value that is either 'tcp' or 'udp'";
+
+                    Log.LogError(message, arguments);
+                }
+            }
+        }
+
+    }
+
 }
