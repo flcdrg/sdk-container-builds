@@ -101,7 +101,10 @@ public class EndToEnd
         await LocalDocker.Load(x, NewImageName, "latest", DockerRegistryManager.ChiseledImage);
 
         // Run the image
-        ProcessStartInfo runInfo = new("docker", $"run --rm --tty {NewImageName}:latest");
+        ProcessStartInfo runInfo = new("docker", $"run --rm --tty {NewImageName}:latest"){
+            RedirectStandardError = true,
+            RedirectStandardOutput = true
+        };
         Process run = Process.Start(runInfo);
         Assert.IsNotNull(run);
         await run.WaitForExitAsync();
@@ -117,7 +120,7 @@ public class EndToEnd
             d.Delete(recursive: true);
         }
 
-        ProcessStartInfo psi = new("dotnet", "new console -f net6.0 -o MinimalTestApp")
+        ProcessStartInfo psi = new("dotnet", "new mvc -f net6.0 -o MinimalTestApp")
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -227,14 +230,23 @@ public class EndToEnd
         Process publish = Process.Start(info);
         Assert.IsNotNull(publish);
         await publish.WaitForExitAsync();
-        Assert.AreEqual(0, publish.ExitCode, await publish.StandardOutput.ReadToEndAsync());
+        Console.WriteLine(publish.StandardOutput.ReadToEnd());
+        Console.WriteLine(publish.StandardError.ReadToEnd());
+        Assert.AreEqual(0, publish.ExitCode, publish.StandardOutput.ReadToEnd() + "\n" + publish.StandardError.ReadToEnd());
 
-        Process pull = Process.Start("docker", $"pull {DockerRegistryManager.LocalRegistry}/{NewImageName}:latest");
+        var pullInfo = new ProcessStartInfo
+        {
+            FileName = "docker",
+            Arguments = $"pull {DockerRegistryManager.LocalRegistry}/{NewImageName}:1.0",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        Process pull = Process.Start(pullInfo);
         Assert.IsNotNull(pull);
         await pull.WaitForExitAsync();
-        Assert.AreEqual(0, pull.ExitCode);
+        Assert.AreEqual(0, pull.ExitCode, pull.StandardOutput.ReadToEnd() + "\n" + pull.StandardError.ReadToEnd());
 
-        ProcessStartInfo runInfo = new("docker", $"run --rm --tty {DockerRegistryManager.LocalRegistry}/{NewImageName}:latest")
+        ProcessStartInfo runInfo = new("docker", $"run --rm --tty {DockerRegistryManager.LocalRegistry}/{NewImageName}:1.0")
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -248,7 +260,7 @@ public class EndToEnd
         Console.WriteLine("stdout: " + stdout);
         Console.WriteLine("stderr: " + await run.StandardError.ReadToEndAsync());
 
-        Assert.AreEqual(0, run.ExitCode);
+        Assert.AreEqual(0, run.ExitCode, pull.StandardOutput.ReadToEnd() + "\n" + pull.StandardError.ReadToEnd());
         newProjectDir.Delete(true);
         pathForLocalNugetSource.Delete(true);
     }
