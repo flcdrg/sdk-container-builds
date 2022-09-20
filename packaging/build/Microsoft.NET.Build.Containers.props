@@ -8,7 +8,7 @@
         <ContainerizeFolderName>containerize</ContainerizeFolderName>
         <!--The folder where the custom task will be present. It points to inside the nuget package. -->
         <CustomTasksFolder>$(MSBuildThisFileDirectory)..\$(taskFoldername)\$(taskFramework)\</CustomTasksFolder>
-        <ContainerizeFolder>$(MSBuildThisFileDirectory)..\$(ContainerizeFolderName)\</ContainerizeFolder>
+        <ContainerizeFolder Condition="'$(ContainerizeFolder)' == ''">$(MSBuildThisFileDirectory)..\$(ContainerizeFolderName)\</ContainerizeFolder>
         <!--Reference to the assembly which contains the MSBuild Task-->
         <CustomTasksAssembly Condition="'$(CustomTasksAssembly)' == ''">$(CustomTasksFolder)$(MSBuildThisFileName).dll</CustomTasksAssembly>
     </PropertyGroup>

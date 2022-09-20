@@ -1,8 +1,9 @@
 ﻿using System.CommandLine;
 using Microsoft.NET.Build.Containers;
-using System.Text.Json;
 using System.CommandLine.Parsing;
 using System.Text;
+using System.CommandLine.Builder;
+using System.CommandLine.Invocation;
 
 var publishDirectoryArg = new Argument<DirectoryInfo>(
     name: "PublishDirectory",
@@ -164,4 +165,43 @@ root.SetHandler(async (context) =>
     await ContainerBuilder.Containerize(_publishDir, _workingDir, _baseReg, _baseName, _baseTag, _entrypoint, _entrypointArgs, _name, _tags, _outputReg, _labels, _ports);
 });
 
-return await root.InvokeAsync(args);
+
+void WriteExceptionMessage(Exception ex, InvocationContext ctx) {
+    ContainerBuilder.WriteMessage("error", "general", "CONTAINER666", "Error while executing containerize command: {0}", ex);
+};
+
+Task WriteParseErrors(InvocationContext context, Func<InvocationContext, Task> next)
+{
+    if (context.ParseResult.Errors is { Count: 0 })
+    {
+        return next(context);
+    } else { 
+        var errors = context.ParseResult.Errors;
+        foreach (var error in errors)
+        {   
+            if (error.SymbolResult is OptionResult o)
+            {
+                if (o.Option == labelsOpt)
+                {
+                    ContainerBuilder.WriteMessage("error", "label", "CONTAINER005", "Error while parsing container label: {0}", error.Message);
+                }
+                else if (o.Option == portsOpt)
+                {
+                    ContainerBuilder.WriteMessage("error", "label", "CONTAINER006", "Error while parsing container port: {0}", error.Message);
+                }
+            }
+            else
+            {
+                ContainerBuilder.WriteMessage("error", "validation", "CONTAINER007", error.Message);
+            }
+        }
+        context.ExitCode = 1;
+        return Task.CompletedTask;
+    } 
+    
+}
+
+var pipeline = new CommandLineBuilder(root).AddMiddleware(WriteParseErrors).UseExceptionHandler(WriteExceptionMessage).Build();
+
+
+return await pipeline.InvokeAsync(args);

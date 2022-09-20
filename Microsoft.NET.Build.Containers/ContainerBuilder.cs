@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 public static class ContainerBuilder
 {
+    public static void WriteMessage(string level, string category, string code, string messageFormat, params object[] formatArgs) => Console.WriteLine($"Containerize: {category} {level} {code}: {messageFormat}", formatArgs);
+
     public static async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string[] entrypointArgs, string imageName, string[] imageTags, string outputRegistry, string[] labels, Port[] exposedPorts)
     {
         Registry baseRegistry = new Registry(new Uri(registryName));
@@ -53,7 +55,7 @@ public static class ContainerBuilder
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Containerize: error CONTAINER001: Failed to push to local docker registry: {e}");
+                    WriteMessage("error", "push", "CONTAINER001", "Failed to push to local docker registry: {0}", e);
                     Environment.ExitCode = -1;
                 }
             }
@@ -66,7 +68,7 @@ public static class ContainerBuilder
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Containerize: error CONTAINER001: Failed to push to output registry: {e}");
+                    WriteMessage("error", "push", "CONTAINER001", "Failed to push to output registry: {0}", e);
                     Environment.ExitCode = -1;
                 }
             }
