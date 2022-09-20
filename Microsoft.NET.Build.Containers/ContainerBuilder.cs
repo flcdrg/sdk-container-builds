@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 public static class ContainerBuilder
 {
-    public static void WriteMessage(string level, string category, string code, string messageFormat, params object[] formatArgs) => Console.WriteLine($"Containerize: {category} {level} {code}: {messageFormat}", formatArgs);
+    public static void WriteMessage(string level, string category, string code, string messageFormat, params object[] formatArgs) => Console.WriteLine($"Containerize: {level} {code}: {messageFormat}", formatArgs);
 
     public static async Task Containerize(DirectoryInfo folder, string workingDir, string registryName, string baseName, string baseTag, string[] entrypoint, string[] entrypointArgs, string imageName, string[] imageTags, string outputRegistry, string[] labels, Port[] exposedPorts)
     {

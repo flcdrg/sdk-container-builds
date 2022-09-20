@@ -179,20 +179,20 @@ Task WriteParseErrors(InvocationContext context, Func<InvocationContext, Task> n
         var errors = context.ParseResult.Errors;
         foreach (var error in errors)
         {   
-            if (error.SymbolResult is OptionResult o)
+            if (error.SymbolResult is ArgumentResult a && a.Parent is OptionResult o)
             {
                 if (o.Option == labelsOpt)
                 {
-                    ContainerBuilder.WriteMessage("error", "label", "CONTAINER005", "Error while parsing container label: {0}", error.Message);
+                    ContainerBuilder.WriteMessage("error", "label", "CONTAINER005", error.Message.ReplaceLineEndings("").Replace('\t', ' '));
                 }
                 else if (o.Option == portsOpt)
                 {
-                    ContainerBuilder.WriteMessage("error", "label", "CONTAINER006", "Error while parsing container port: {0}", error.Message);
+                    ContainerBuilder.WriteMessage("error", "label", "CONTAINER006", error.Message.ReplaceLineEndings("").Replace('\t', ' '));
                 }
             }
             else
             {
-                ContainerBuilder.WriteMessage("error", "validation", "CONTAINER007", error.Message);
+                ContainerBuilder.WriteMessage("error", "validation", "CONTAINER007", error.Message.ReplaceLineEndings("c").Replace('\t', ' '));
             }
         }
         context.ExitCode = 1;
